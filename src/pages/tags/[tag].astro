@@ -1,0 +1,28 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BlogPost from '../../components/BlogPost.astro';
+
+export async function getStaticPaths() {
+  //批量导入所有 Markdown 文章。
+  const allPosts = Object.values(import.meta.glob('../posts/*.md', { eager: true }));
+  //收集所有文章的标签，去重，得到所有唯一标签。
+  const uniqueTags = [...new Set(allPosts.map((post: any) => post.frontmatter.tags).flat().filter((tag) => typeof tag === 'string' && tag.trim() != ''))];
+  //为每个标签生成一个页面，
+  return uniqueTags.map((tag) => {
+    const filteredPosts = allPosts.filter((post: any) => Array.isArray(post.frontmatter.tags) && post.frontmatter.tags.includes(tag));
+    return {
+      params: { tag }, //页面参数路径
+      props: { posts: filteredPosts }, //该标签下的所有文章
+    };
+  });
+}
+
+const { tag } = Astro.params;
+const { posts } = Astro.props;
+---
+<BaseLayout pageTitle={tag}>
+  <p>包含「{tag}」标签的文章</p>
+  <ul>
+    {posts.map((post: any) => <BlogPost url={post.url} title={post.frontmatter.title}/>)}
+  </ul>
+</BaseLayout>
